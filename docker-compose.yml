@@ -1,0 +1,47 @@
+name: aegislab
+services:
+  postgres:
+    image: postgres:17.4-bookworm
+    environment:
+      POSTGRES_USER: aegislab
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aegislab_local}
+      POSTGRES_DB: aegislab
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aegislab -d aegislab"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+  redis:
+    image: redis:7.4.2-bookworm
+    ports: ["127.0.0.1:6379:6379"]
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: ["redis_data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/api.Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://aegislab:${POSTGRES_PASSWORD:-aegislab_local}@postgres:5432/aegislab
+      REDIS_URL: redis://redis:6379/0
+      LOCAL_LAB_ONLY: "true"
+    ports: ["127.0.0.1:8090:8090"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    mem_limit: 512m
+    cpus: 1
+    restart: unless-stopped
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+__pycache__/
+.pytest_cache/
+.venv/
+*.db
+*.tsbuildinfo
+*.tar.gz
+.openai/local/
+.mypy_cache/
+.ruff_cache/
+.coverage
